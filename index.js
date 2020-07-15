@@ -1,7 +1,7 @@
-var Discord = require('discord.js');
-var auth = require('./auth.json');
+const Discord = require('discord.js');
+const auth = require('./auth.json');
 const fetch = require('node-fetch');
-var sqlite3 = require('sqlite3').verbose();
+const sqlite3 = require('sqlite3').verbose();
 
 // Initialize Discord Bot
 var bot = new Discord.Client();
@@ -10,6 +10,7 @@ var bot = new Discord.Client();
 var db, checker;
 const interval = 600000; //600000; //10 minutes
 const threshold = 925;
+const stats = {};
 
 bot.once('ready', function (evt) {
     console.log('Connected');
@@ -34,31 +35,25 @@ bot.on('message', message => {
 	if (command === 'ping') {
 		message.channel.send('Pong.');
 	} else if (command === 'stats') {
-        message.channel.send("Currently checking every " + interval/1000 + " seconds.\nThrehold is " + threshold + " gems\n");
-        db.get("SELECT COUNT(*) AS numpoints, COUNT(DISTINCT DATE(date)) AS numdays FROM prices", undefined, (err, row) => {
-            if (err) {
-                console.log(err.message);
-                return err;
-            }
-            message.channel.send(row.numpoints + " data points collected over " + row.numdays + " days.\n");
-        });
-        db.get("SELECT MIN(priceper) AS minprice FROM prices WHERE date > DATETIME('now', '-7 day', 'localtime')", undefined, (err, row) => {
-            if (err) {
-                return console.error(err.message);
-            }
-            message.channel.send("Lowest price over the past seven days has been " + row.minprice);
-        });
-        db.get("SELECT MAX(date) AS maxdate FROM prices", undefined, (err, row) => {
-            if (err) {
-                return console.error(err.message);
-            }
-            db.get("SELECT priceper FROM prices WHERE date=?", row.maxdate, (err, row) => {
-                if (err) {
-                    return console.error(err.message);
-                }
-                message.channel.send("Most recent price is " + row.priceper);
-            });
-        });
+        // Generate graph
+
+        const embed = new Discord.MessageEmbed()
+        .setColor('#0099ff')
+        .setTitle('GW2 Gold Price Notifier')
+        .setURL('https://github.com/Perlkonig/gw2-bot-goldprices')
+        .setAuthor('Aaron Dalton', undefined, 'https://www.perlkonig.com')
+        .setDescription('Statistical Report')
+        // .setThumbnail('https://i.imgur.com/wSTFkRM.png')
+        .addField('Checking Frequency', interval/1000 + " seconds", true)
+        .addField('Notification Threshold', threshold, true)
+        .addField(stats.numpoints + " datapoints over " + stats.numdays + " days", "\u200B")
+        .addField('Price at Last Check', stats.lastprice, true)
+        .addField('Current Seven-Day Low', stats.minprice, true)
+        // .setImage('https://i.imgur.com/wSTFkRM.png')
+        .setTimestamp()
+        .setFooter('All prices are /gems per 250 gold/');
+
+        message.channel.send(embed);
     }
 })
 
@@ -116,6 +111,45 @@ function checkPrice() {
             });
         }
 
+        // Store data in global object for stats calls
+        db.get("SELECT COUNT(*) AS numpoints, COUNT(DISTINCT DATE(date)) AS numdays FROM prices", undefined, (err, row) => {
+            if (err) {
+                console.log(err.message);
+                return err;
+            }
+            stats.numpoints = row.numpoints;
+            stats.numdays = row.numdays;
+        });
+        db.get("SELECT MIN(priceper) AS minprice FROM prices WHERE date > DATETIME('now', '-7 day', 'localtime')", undefined, (err, row) => {
+            if (err) {
+                return console.error(err.message);
+            }
+            stats.minprice = row.minprice;
+        });
+        db.get("SELECT MAX(date) AS maxdate FROM prices", undefined, (err, row) => {
+            if (err) {
+                return console.error(err.message);
+            }
+            db.get("SELECT priceper FROM prices WHERE date=?", row.maxdate, (err, row) => {
+                if (err) {
+                    return console.error(err.message);
+                }
+                stats.lastprice = row.priceper;
+            });
+        });
+        db.all("SELECT DATETIME(date) as date, priceper FROM prices ORDER BY date", undefined, (err, rows) => {
+            if (err) {
+                return console.error(err.message);
+            }
+            stats.points = [];
+            stats.labels = [];
+            rows.forEach((row) => {
+                stats.points.push(row.priceper);
+                stats.labels.push(row.date);
+            });
+        });
+
+        // Now store price in the database
         storePrice(priceper);
     })
     .catch(err => {

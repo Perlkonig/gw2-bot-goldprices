@@ -7,6 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Aaron Dalton <aaron@daltons.ca> (https://www.perlkonig.com)",
+  "repository": "https://github.com/Perlkonig/gw2-bot-goldprices",
   "license": "MIT",
   "dependencies": {
     "discord.js": "^12.2.0",
