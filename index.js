@@ -8,7 +8,7 @@ var bot = new Discord.Client();
 
 // Establish global vars
 var db, checker;
-const interval = 60000; //600000; //10 minutes
+const interval = 600000; //600000; //10 minutes
 const threshold = 925;
 
 bot.once('ready', function (evt) {
