@@ -42,6 +42,12 @@ bot.on('message', message => {
             }
             message.channel.send(row.numpoints + " data points collected over " + row.numdays + " days.\n");
         });
+        db.get("SELECT MIN(priceper) AS minprice FROM prices WHERE date > DATETIME('now', '-7 day', 'localtime')", undefined, (err, row) => {
+            if (err) {
+                return console.error(err.message);
+            }
+            message.channel.send("Lowest price over the past seven days has been " + row.minprice);
+        });
         db.get("SELECT MAX(date) AS maxdate FROM prices", undefined, (err, row) => {
             if (err) {
                 return console.error(err.message);
@@ -101,8 +107,8 @@ function checkPrice() {
                 if (priceper < row.minprice) {
                     bot.channels.fetch("587473116767322139")
                     .then(channel => {
-                        console.log("New 7-day low price! Current price: " + priceper);
-                        channel.send("New 7-day low price! Current price: " + priceper);
+                        console.log("New seven-day low price! Current price: " + priceper);
+                        channel.send("New seven-day low price! Current price: " + priceper);
                     })
                     .catch(err => {
                         console.log("Error alerting new low: " + err);
