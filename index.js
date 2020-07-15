@@ -34,7 +34,7 @@ bot.on('message', message => {
 	if (command === 'ping') {
 		message.channel.send('Pong.');
 	} else if (command === 'stats') {
-        message.channel.send("Currently checking every " + interval/1000 + " seconds.\nThrehold is " + threshold + "gems\n");
+        message.channel.send("Currently checking every " + interval/1000 + " seconds.\nThrehold is " + threshold + " gems\n");
         db.get("SELECT COUNT(*) AS numpoints, COUNT(DISTINCT DATE(date)) AS numdays FROM prices", undefined, (err, row) => {
             if (err) {
                 console.log(err.message);
