@@ -2,6 +2,7 @@ const Discord = require('discord.js');
 const auth = require('./auth.json');
 const fetch = require('node-fetch');
 const sqlite3 = require('sqlite3').verbose();
+const { CanvasRenderService } = require('chartjs-node-canvas');
 
 // Initialize Discord Bot
 var bot = new Discord.Client();
@@ -11,6 +12,31 @@ var db, checker;
 const interval = 600000; //600000; //10 minutes
 const threshold = 925;
 const stats = {};
+const width = 600; //px
+const height = 400; //px
+const chartCallback = (ChartJS) => {
+
+    // Global config example: https://www.chartjs.org/docs/latest/configuration/
+    // ChartJS.defaults.global.elements.rectangle.borderWidth = 2;
+    // // Global plugin example: https://www.chartjs.org/docs/latest/developers/plugins.html
+	ChartJS.plugins.register({
+        beforeDraw: (chart, options) => {
+            const ctx = chart.ctx;
+            ctx.save();
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0, 0, width, height);
+            ctx.restore();
+        }
+    });    
+    // ChartJS.plugins.register({
+    //     // plugin implementation
+    // });
+    // // New chart type example: https://www.chartjs.org/docs/latest/developers/charts.html
+    // ChartJS.controllers.MyType = ChartJS.DatasetController.extend({
+    //     // chart implementation
+    // });
+};
+const canvasRenderService = new CanvasRenderService(width, height, chartCallback);
 
 bot.once('ready', function (evt) {
     console.log('Connected');
@@ -36,24 +62,70 @@ bot.on('message', message => {
 		message.channel.send('Pong.');
 	} else if (command === 'stats') {
         // Generate graph
+        (async () => {
+            const configuration = {
+                type: 'line',
+                data: {
+                    labels: stats.labels,
+                    datasets: [{
+                        label: 'Gems per 250 gold',
+                        data: stats.points,
+                        backgroundColor: '#f9a602',
+                        borderColor: '#f9a602',
+                        fill: false,
+                        borderWidth: 1
+                        }]
+                },
+                options: {
+                    title: {
+                        display: true,
+                        text: 'Price History'
+                    },
+                    scales: {
+                        xAxes: [{
+                            display: true,
+                            scaleLabel: {
+                                display: true,
+                                labelString: 'Date'
+                            }
+                        }],
+                        yAxes: [{
+                            display: true,
+                            scaleLabel: {
+                                display: true,
+                                labelString: 'Gems per 250 gold'
+                            }
+                        }]
+                    }
+                }
+            };            
+            return await canvasRenderService.renderToBuffer(configuration);
+            // return await canvasRenderService.renderToDataURL(configuration);
+            // return canvasRenderService.renderToStream(configuration);
+        })()
+        .then((png) => {
+            // Generate embed
+            const attachment = new Discord.MessageAttachment(png, 'gold-graph.png');
 
-        const embed = new Discord.MessageEmbed()
-        .setColor('#0099ff')
-        .setTitle('GW2 Gold Price Notifier')
-        .setURL('https://github.com/Perlkonig/gw2-bot-goldprices')
-        .setAuthor('Aaron Dalton', undefined, 'https://www.perlkonig.com')
-        .setDescription('Statistical Report')
-        // .setThumbnail('https://i.imgur.com/wSTFkRM.png')
-        .addField('Checking Frequency', interval/1000 + " seconds", true)
-        .addField('Notification Threshold', threshold, true)
-        .addField(stats.numpoints + " datapoints over " + stats.numdays + " days", "\u200B")
-        .addField('Price at Last Check', stats.lastprice, true)
-        .addField('Current Seven-Day Low', stats.minprice, true)
-        // .setImage('https://i.imgur.com/wSTFkRM.png')
-        .setTimestamp()
-        .setFooter('All prices are /gems per 250 gold/');
+            const embed = new Discord.MessageEmbed()
+            .setColor('#f9a602')
+            .setTitle('GW2 Gold Price Notifier')
+            .setURL('https://github.com/Perlkonig/gw2-bot-goldprices')
+            // .setAuthor('Aaron Dalton', undefined, 'https://www.perlkonig.com')
+            .setDescription('Statistical Report')
+            // .setThumbnail('https://i.imgur.com/wSTFkRM.png')
+            .addField('Checking Frequency', interval/1000 + " seconds", true)
+            .addField('Notification Threshold', threshold, true)
+            .addField(stats.numpoints + " datapoints over " + stats.numdays + " days", "\u200B")
+            .addField('Price at Last Check', stats.lastprice, true)
+            .addField('Current Seven-Day Low', stats.minprice, true)
+            .attachFiles(attachment)
+            .setImage("attachment://gold-graph.png")
+            .setTimestamp()
+            .setFooter('All prices are /gems per 250 gold/');
 
-        message.channel.send(embed);
+            message.channel.send(embed);
+        });
     }
 })
 
@@ -144,8 +216,16 @@ function checkPrice() {
             stats.points = [];
             stats.labels = [];
             rows.forEach((row) => {
-                stats.points.push(row.priceper);
-                stats.labels.push(row.date);
+                if (stats.points.length === 0) {
+                    stats.points.push(row.priceper);
+                    stats.labels.push(row.date);
+        
+                } else {
+                    if (row.priceper !== stats.points[stats.points.length - 1]) {
+                        stats.points.push(row.priceper);
+                        stats.labels.push(row.date);
+                    }
+                }
             });
         });
 
