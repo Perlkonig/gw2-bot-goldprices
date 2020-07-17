@@ -1,5 +1,7 @@
 auth.json
 history.db
+node_modules
+
 testgraph.js
 graph.png
-node_modules
+run.sh

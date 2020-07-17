@@ -152,7 +152,7 @@ function checkPrice() {
         // Do math
         const coinsper = jsonData.coins_per_gem;
         const priceper = Math.ceil(2500000 / coinsper);
-        console.log("Coins per: " + coinsper + ", Price per: " + priceper);
+        // console.log("Coins per: " + coinsper + ", Price per: " + priceper);
 
         // Alert if below threshold
         if (priceper <= threshold) {
