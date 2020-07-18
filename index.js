@@ -12,7 +12,7 @@ var db, checker;
 const interval = 600000; //600000; //10 minutes
 const threshold = 925;
 const stats = {};
-const width = 600; //px
+const width = 800; //px
 const height = 400; //px
 const chartCallback = (ChartJS) => {
 
