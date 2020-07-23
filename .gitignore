@@ -1,7 +1,9 @@
-auth.json
+config.json
 history.db
 node_modules
 
 testgraph.js
+scratch.js
 graph.png
 run.sh
+scrape.js
