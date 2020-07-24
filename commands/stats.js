@@ -87,6 +87,7 @@ module.exports = {
                             backgroundColor: '#f9a602',
                             borderColor: '#f9a602',
                             fill: false,
+                            pointRadius: 0,
                             borderWidth: 1
                             }]
                     },
