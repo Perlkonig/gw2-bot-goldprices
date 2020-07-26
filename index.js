@@ -24,7 +24,7 @@ bot.once('ready', function (evt) {
     console.log("Initializing database");
     db = new sqlite3.Database('./db/history.db');
     db.serialize(function() {
-        db.run("CREATE TABLE IF NOT EXISTS prices (date DATETIME NOT NULL PRIMARY KEY, priceper INTEGER); CREATE INDEX IF NOT EXISTS idx_priceper ON prices (priceper)");
+        db.run("CREATE TABLE IF NOT EXISTS prices (date DATETIME NOT NULL PRIMARY KEY, priceper INTEGER)");
     });
     console.log("Starting the price checker");
     checkPrice();
