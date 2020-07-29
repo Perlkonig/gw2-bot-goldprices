@@ -54,11 +54,8 @@ bot.on('message', message => {
     const now = Date.now();
     const timestamps = cooldowns.get(command.name);
     const cooldownAmount = (command.cooldown || 3) * 1000;
-    console.log(cooldownAmount);
-    console.log(timestamps);
     
     if (timestamps.has(message.author.id)) {
-        console.log("Author found");
         const expirationTime = timestamps.get(message.author.id) + cooldownAmount;
     
         if (now < expirationTime) {
@@ -67,10 +64,8 @@ bot.on('message', message => {
         }
     }
 
-    console.log("First issuance");
     timestamps.set(message.author.id, now);
     setTimeout(() => timestamps.delete(message.author.id), cooldownAmount);        
-    console.log(cooldowns);
 
     try {
         command.execute(message, args, stats);
