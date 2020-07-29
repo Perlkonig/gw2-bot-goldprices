@@ -17,7 +17,9 @@ for (const file of commandFiles) {
 var db, checker;
 const interval = 600000; //10 minutes
 const threshold = 925;
-const stats = {interval: interval, threshold: threshold};
+const channel = "587473116767322139";
+const stats = {interval: interval, threshold: threshold, channel: channel};
+const cooldowns = new Discord.Collection();
 
 bot.once('ready', function (evt) {
     console.log('Connected');
@@ -44,6 +46,31 @@ bot.on('message', message => {
     if (command.args && !args.length) {
         return message.channel.send(`You didn't provide any arguments, ${message.author}!`);
     }
+
+    if (!cooldowns.has(command.name)) {
+        cooldowns.set(command.name, new Discord.Collection());
+    }
+    
+    const now = Date.now();
+    const timestamps = cooldowns.get(command.name);
+    const cooldownAmount = (command.cooldown || 3) * 1000;
+    console.log(cooldownAmount);
+    console.log(timestamps);
+    
+    if (timestamps.has(message.author.id)) {
+        console.log("Author found");
+        const expirationTime = timestamps.get(message.author.id) + cooldownAmount;
+    
+        if (now < expirationTime) {
+            const timeLeft = (expirationTime - now) / 1000;
+            return message.reply(`please wait ${timeLeft.toFixed(1)} more second(s) before reusing the \`${command.name}\` command.`);
+        }
+    }
+
+    console.log("First issuance");
+    timestamps.set(message.author.id, now);
+    setTimeout(() => timestamps.delete(message.author.id), cooldownAmount);        
+    console.log(cooldowns);
 
     try {
         command.execute(message, args, stats);
@@ -79,11 +106,11 @@ function checkPrice() {
         // console.log("Coins per: " + coinsper + ", Price per: " + priceper);
 
         // Alert if below threshold
-        if (priceper <= threshold) {
-            console.log("\tPRICE BELOW THRESHOLD!");
-            bot.channels.fetch("587473116767322139")
+        if (priceper <= stats.threshold) {
+            // console.log("\tPRICE BELOW THRESHOLD!");
+            bot.channels.fetch(stats.channel)
             .then(channel => {
-                channel.send("Gold prices below threshold! Current price: " + priceper);
+                channel.send("**Gold prices below threshold!** Current price: " + priceper);
             })
             .catch(err => {
                 console.log("Error alerting coin prices: " + err);
@@ -95,7 +122,7 @@ function checkPrice() {
                     return console.error(err.message);
                 }
                 if (priceper < row.minprice) {
-                    bot.channels.fetch("587473116767322139")
+                    bot.channels.fetch(stats.channel)
                     .then(channel => {
                         console.log("New seven-day low price! Current price: " + priceper);
                         channel.send("New seven-day low price! Current price: " + priceper);
