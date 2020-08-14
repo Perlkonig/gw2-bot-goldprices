@@ -54,6 +54,7 @@ module.exports = {
                         data: [stats.allpoints],
                         backgroundColor: '#f9a60240',
                         borderColor: '#f9a602',
+                        medianColor: '#5402f9',
                         borderWidth: 1,
                         itemStyle: 'circle',
                         itemRadius: 3,
