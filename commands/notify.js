@@ -4,7 +4,7 @@ module.exports = {
 	execute(message, args, stats) {
 		message.client.channels.fetch(stats.channel)
 		.then(channel => {
-			channel.send("Notification test.");
+			channel.send(`${message.author} Notification test.`);
 		})
 		.catch(err => {
 			console.log("Error testing notifications: " + err);
