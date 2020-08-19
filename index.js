@@ -27,6 +27,7 @@ bot.once('ready', function (evt) {
     db = new sqlite3.Database('./db/history.db');
     db.serialize(function() {
         db.run("CREATE TABLE IF NOT EXISTS prices (date DATETIME NOT NULL PRIMARY KEY, priceper INTEGER)");
+        db.run("CREATE TABLE IF NOT EXISTS users (id TEXT NOT NULL PRIMARY KEY, api TEXT NOT NULL)");
     });
     console.log("Starting the price checker");
     checkPrice();
@@ -98,36 +99,82 @@ function checkPrice() {
         // Do math
         const coinsper = jsonData.coins_per_gem;
         const priceper = Math.ceil(2500000 / coinsper);
-        // console.log("Coins per: " + coinsper + ", Price per: " + priceper);
+        // console.log(`Price per 250: ${priceper}`);
+
+        // Alert if new 7-day low
+        db.get("SELECT MIN(priceper) AS minprice FROM prices WHERE date > DATETIME('now', '-7 day', 'localtime')", undefined, (err, row) => {
+            if (err) {
+                return console.error(err.message);
+            }
+            if (priceper < row.minprice) {
+                bot.channels.fetch(stats.channel)
+                .then(channel => {
+                    // console.log("New seven-day low price! Current price: " + priceper);
+                    channel.send("New seven-day low price! Current price: " + priceper);
+                })
+                .catch(err => {
+                    console.log("Error alerting new low: " + err);
+                })                   
+            }
+        });
 
         // Alert if below threshold
-        if (priceper <= stats.threshold) {
-            // console.log("\tPRICE BELOW THRESHOLD!");
-            bot.channels.fetch(stats.channel)
-            .then(channel => {
-                channel.send("**Gold prices below threshold!** Current price: " + priceper);
-            })
-            .catch(err => {
-                console.log("Error alerting coin prices: " + err);
-            })
-        // Alert if new 7-day low
-        } else {
-            db.get("SELECT MIN(priceper) AS minprice FROM prices WHERE date > DATETIME('now', '-7 day', 'localtime')", undefined, (err, row) => {
-                if (err) {
-                    return console.error(err.message);
-                }
-                if (priceper < row.minprice) {
-                    bot.channels.fetch(stats.channel)
-                    .then(channel => {
-                        console.log("New seven-day low price! Current price: " + priceper);
-                        channel.send("New seven-day low price! Current price: " + priceper);
-                    })
-                    .catch(err => {
-                        console.log("Error alerting new low: " + err);
-                    })                   
-                }
+        db.all("SELECT * FROM USERS", undefined, (err, rows) => {
+            if (err) {
+                return console.error(err.message);
+            }
+
+            rows.forEach((row) => {
+                fetch('https://api.guildwars2.com/v2/account/wallet', {
+                    method: 'get',
+                    cache: "no-store",
+                    headers: {
+                        "Authorization": `Bearer ${row.api}`
+                    }
+                })
+                .then(response => response.json())
+                .then(jsonData => {
+                    let currgold;
+                    for (let i = 0; i < jsonData.length; i++) {
+                        if (jsonData[i].id === 1) {
+                            currgold = jsonData[i].value / 10000;
+                            break;
+                        }
+                    }
+                    // console.log(`Current gold: ${currgold}`);
+                    let notify = false;
+                    if ( (currgold < 1000) && (priceper < 1000) ) {
+                        notify = true;
+                    } else if ( (currgold < 2000) && (priceper < 950) ) {
+                        notify = true;
+                    } else if ( (currgold < 3000) && (priceper < 925) ) {
+                        notify = true;
+                    } else if ( (currgold < 4000) && (priceper < 900) ) {
+                        notify = true;
+                    } else if ( (currgold < 5000) && (priceper < 875) ) {
+                        notify = true;
+                    } else if ( (currgold < 6000) && (priceper < 850) ) {
+                        notify = true;
+                    } else if ( (currgold < 7000) && (priceper < 825) ) {
+                        notify = true;
+                    } else if ( (currgold < 8000) && (priceper < 800) ) {
+                        notify = true;
+                    }
+                    // console.log(`Notify?: ${notify}`);
+
+                    if (notify) {
+                        // console.log("\tPRICE BELOW THRESHOLD!");
+                        bot.channels.fetch(stats.channel)
+                        .then(channel => {
+                            channel.send(`<${row.id}> **Gold prices are below your personal threshold!** Current price: ${priceper}`);
+                        })
+                        .catch(err => {
+                            console.log("Error alerting coin prices: " + err);
+                        })
+                    }
+                });
             });
-        }
+        });
 
         // Now store price in the database
         storePrice(priceper);

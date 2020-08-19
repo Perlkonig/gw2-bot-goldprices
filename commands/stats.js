@@ -203,7 +203,7 @@ module.exports = {
                     .setDescription('Statistical Report')
                     // .setThumbnail('https://i.imgur.com/wSTFkRM.png')
                     .addField('Checking Frequency', globalstats.interval/1000 + " seconds", true)
-                    .addField('Notification Threshold', globalstats.threshold, true)
+                    .addField('Notification Threshold', "Tiered", true)
                     .addField(stats.numpoints + " datapoints over " + stats.numdays + " days", "\u200B")
                     .addField('Price at Last Check', stats.lastprice, true)
                     .addField('Current Seven-Day Low', stats.minprice, true)
