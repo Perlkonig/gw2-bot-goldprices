@@ -68,7 +68,7 @@ bot.on('message', message => {
     setTimeout(() => timestamps.delete(message.author.id), cooldownAmount);        
 
     try {
-        command.execute(message, args, stats);
+        command.execute(message, args, stats, db);
     } catch (error) {
         console.error(error);
         message.reply('there was an error trying to execute that command!');
@@ -128,54 +128,6 @@ function checkPrice() {
                 }
             });
         }
-
-        // Store data in global object for stats calls
-        db.get("SELECT COUNT(*) AS numpoints, COUNT(DISTINCT DATE(date)) AS numdays FROM prices", undefined, (err, row) => {
-            if (err) {
-                console.log(err.message);
-                return err;
-            }
-            stats.numpoints = row.numpoints;
-            stats.numdays = row.numdays;
-        });
-        db.get("SELECT MIN(priceper) AS minprice FROM prices WHERE date > DATETIME('now', '-7 day', 'localtime')", undefined, (err, row) => {
-            if (err) {
-                return console.error(err.message);
-            }
-            stats.minprice = row.minprice;
-        });
-        db.get("SELECT MAX(date) AS maxdate FROM prices", undefined, (err, row) => {
-            if (err) {
-                return console.error(err.message);
-            }
-            db.get("SELECT priceper FROM prices WHERE date=?", row.maxdate, (err, row) => {
-                if (err) {
-                    return console.error(err.message);
-                }
-                stats.lastprice = row.priceper;
-            });
-        });
-        db.all("SELECT DATETIME(date) as date, priceper FROM prices ORDER BY date", undefined, (err, rows) => {
-            if (err) {
-                return console.error(err.message);
-            }
-            stats.points = [];
-            stats.labels = [];
-            stats.allpoints = [];
-            rows.forEach((row) => {
-                stats.allpoints.push(row.priceper);
-                if (stats.points.length === 0) {
-                    stats.points.push(row.priceper);
-                    stats.labels.push(row.date);
-        
-                } else {
-                    if (row.priceper !== stats.points[stats.points.length - 1]) {
-                        stats.points.push(row.priceper);
-                        stats.labels.push(row.date);
-                    }
-                }
-            });
-        });
 
         // Now store price in the database
         storePrice(priceper);
