@@ -166,7 +166,7 @@ function checkPrice() {
                         // console.log("\tPRICE BELOW THRESHOLD!");
                         bot.channels.fetch(stats.channel)
                         .then(channel => {
-                            channel.send(`<${row.id}> **Gold prices are below your personal threshold!** Current price: ${priceper}`);
+                            channel.send(`<@${row.id}> **Gold prices are below your personal threshold!** Current price: ${priceper}`);
                         })
                         .catch(err => {
                             console.log("Error alerting coin prices: " + err);
