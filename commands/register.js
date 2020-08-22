@@ -24,7 +24,6 @@ module.exports = {
         })
 		.then(jsonData => {
             if (jsonData !== null) {
-                console.log(message.author.id, apikey);
                 db.run("REPLACE INTO users (id, api) VALUES (?, ?)", [message.author.id, apikey], function(err) {
                     if (err) {
                         message.channel.send(`An error occurred:\n${err}`);
