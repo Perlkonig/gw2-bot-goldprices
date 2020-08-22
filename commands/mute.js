@@ -17,7 +17,7 @@ module.exports = {
                 return message.channel.send(`An error occurred:\n${err}`);
             }
 
-            message.channel.send(`Notifications muted for ${interval} hours`);
+            message.channel.send(`<@${message.author.id}> Notifications muted for ${interval} hours`);
         });
 	},
 };
