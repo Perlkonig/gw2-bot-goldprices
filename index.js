@@ -95,8 +95,22 @@ function checkPrice() {
         method: 'get',
         cache: "no-store"
     })
-    .then(response => response.json())
+    .then(response => {
+        if (response.ok) {
+            return response.json();
+        } else {
+            bot.channels.fetch(stats.channel)
+            .then(channel => {
+                return channel.send("An error occurred fetching gold prices. Will try again at the next interval.");
+            })
+            .catch(err => {
+                console.log("Error alerting failure to fetch gold prices: " + err);
+            })                   
+
+        }
+    })
     .then(jsonData => {
+        console.log(jsonData);
         // Do math
         const coinsper = jsonData.coins_per_gem;
         const priceper = Math.ceil(2500000 / coinsper);
@@ -120,15 +134,16 @@ function checkPrice() {
         });
 
         // Alert if below threshold
-        db.all("SELECT * FROM USERS AS a LEFT JOIN mutes AS b ON a.id = b.id", undefined, (err, rows) => {
+        db.all("SELECT a.id, a.api, b.until FROM USERS AS a LEFT JOIN mutes AS b ON a.id = b.id", undefined, (err, rows) => {
             if (err) {
                 return console.error(err.message);
             }
 
             rows.forEach((row) => {
+                console.log(row);
                 // Check if muted
                 let muted = false;
-                if (row.mute !== null) {
+                if (row.until !== null) {
                     const now = Date.now();
                     if (now <= row.until) {
                         muted = true;
@@ -144,8 +159,23 @@ function checkPrice() {
                             "Authorization": `Bearer ${row.api}`
                         }
                     })
-                    .then(response => response.json())
+                    .then(response => {
+                        if (response.ok) {
+                            return response.json();
+                        } else {
+                            bot.channels.fetch(stats.channel)
+                            .then(channel => {
+                                return channel.send(`An error occurred fetching wallet data for <@${row.id}>. Will try again at the next interval.`);
+                            })
+                            .catch(err => {
+                                console.log("Error alerting failure to fetch wallet data: " + err);
+                            })                   
+                
+                        }
+                
+                    })
                     .then(jsonData => {
+                        console.log(jsonData);
                         let currgold;
                         for (let i = 0; i < jsonData.length; i++) {
                             if (jsonData[i].id === 1) {
