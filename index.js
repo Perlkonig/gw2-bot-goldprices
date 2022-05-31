@@ -110,7 +110,6 @@ function checkPrice() {
         }
     })
     .then(jsonData => {
-        console.log(jsonData);
         // Do math
         const coinsper = jsonData.coins_per_gem;
         const priceper = Math.ceil(2500000 / coinsper);
@@ -140,7 +139,6 @@ function checkPrice() {
             }
 
             rows.forEach((row) => {
-                console.log(row);
                 // Check if muted
                 let muted = false;
                 if (row.until !== null) {
@@ -175,7 +173,6 @@ function checkPrice() {
                 
                     })
                     .then(jsonData => {
-                        console.log(jsonData);
                         let currgold;
                         for (let i = 0; i < jsonData.length; i++) {
                             if (jsonData[i].id === 1) {
